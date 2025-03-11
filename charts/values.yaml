@@ -60,8 +60,8 @@ metadataPrefix: ""
 ## See https://istio.io/latest/docs/ops/configuration/traffic-management/protocol-selection/#explicit-protocol-selection
 ## Prefixes are disabled by default
 
-tcpPrefix: ""  # For Istio this will be "tcp-"
-tlsPrefix: ""  # For Istio this will be "tls-"
+tcpPrefix: "" # For Istio this will be "tcp-"
+tlsPrefix: "" # For Istio this will be "tls-"
 
 ## Persistence
 ##
@@ -92,7 +92,6 @@ rbac:
   enabled: false
   psp: false
   limit_to_namespace: true
-
 
 ## AntiAffinity
 ##
@@ -130,7 +129,7 @@ components:
   # toolset
   toolset: true
   # pulsar manager
-  pulsar_manager: false
+  pulsar_manager: true
 
 # default image repository for pulsar images
 defaultPulsarImageRepository: apachepulsar/pulsar-all
@@ -268,7 +267,7 @@ tls:
 # Enable or disable broker authentication and authorization.
 auth:
   authentication:
-    enabled: false
+    enabled: true
     provider: "jwt"
     jwt:
       # Enable JWT authentication
@@ -412,7 +411,8 @@ zookeeper:
     data:
       name: data
       size: 20Gi
-      local_storage: true
+      local_storage:
+        true
         ## If you already have an existent storage class and want to reuse it, you can specify its name with the option below
         ##
         # storageClassName: existent-storage-class
@@ -433,7 +433,8 @@ zookeeper:
     datalog:
       name: datalog
       size: 20Gi
-      local_storage: true
+      local_storage:
+        true
         ## If you already have an existent storage class and want to reuse it, you can specify its name with the option below
         ##
         # storageClassName: existent-storage-class
@@ -512,7 +513,8 @@ oxia:
       annotations: {}
     service_account:
       annotations: {}
-    tolerations: []
+    tolerations:
+      []
       # nodeSelector:
     # cloud.google.com/gke-nodepool: default-pool
   ## templates/server-statefulset.yaml
@@ -559,7 +561,8 @@ oxia:
       type: requiredDuringSchedulingIgnoredDuringExecution
     # set topologySpreadConstraint to deploy pods across different zones
     topologySpreadConstraints: []
-    tolerations: []
+    tolerations:
+      []
       # nodeSelector:
     # cloud.google.com/gke-nodepool: default-pool
   pprofEnabled: false
@@ -666,7 +669,8 @@ bookkeeper:
     journal:
       name: journal
       size: 10Gi
-      local_storage: true
+      local_storage:
+        true
         ## If you already have an existent storage class and want to reuse it, you can specify its name with the option below
         ##
         # storageClassName: existent-storage-class
@@ -696,7 +700,8 @@ bookkeeper:
     ledgers:
       name: ledgers
       size: 50Gi
-      local_storage: true
+      local_storage:
+        true
         # storageClassName:
         # storageClass:
         # ...
@@ -718,7 +723,8 @@ bookkeeper:
     common:
       name: common
       size: 60Gi
-      local_storage: true
+      local_storage:
+        true
         # storageClassName:
         # storageClass: ## this is common too
         # ...
@@ -763,19 +769,19 @@ bookkeeper:
     # configure the data compaction (bookie entry log compaction and gc) settings
     # https://bookkeeper.apache.org/docs/reference/config#garbage-collection-settings
     # https://bookkeeper.apache.org/docs/reference/config#entry-log-compaction-settings
-    minorCompactionThreshold: "0.2"     # default 0.2 (use default)
-    minorCompactionInterval: "360"      # default 3600 seconds (6 minutes vs default 1 hour)
-    majorCompactionThreshold: "0.8"     # default 0.5
-    majorCompactionInterval: "10800"    # default 86400 seconds (3 hours vs default 1 day)
-    gcWaitTime: "300000"                # default 900000 milli-seconds (5 minutes vs default 15 minutes)
-    isForceGCAllowWhenNoSpace: "true"   # default false
+    minorCompactionThreshold: "0.2" # default 0.2 (use default)
+    minorCompactionInterval: "360" # default 3600 seconds (6 minutes vs default 1 hour)
+    majorCompactionThreshold: "0.8" # default 0.5
+    majorCompactionInterval: "10800" # default 86400 seconds (3 hours vs default 1 day)
+    gcWaitTime: "300000" # default 900000 milli-seconds (5 minutes vs default 15 minutes)
+    isForceGCAllowWhenNoSpace: "true" # default false
     # disk utilization configuration
     # https://bookkeeper.apache.org/docs/reference/config#disk-utilization
     # Make sure that diskUsageLwmThreshold <= diskUsageWarnThreshold <= diskUsageThreshold
-    diskUsageLwmThreshold: "0.85"   # default 0.90
-    diskUsageWarnThreshold: "0.9"   # default 0.95
-    diskUsageThreshold: "0.95"      # default 0.95 (use default)
-    diskCheckInterval: "1800"       # default 10000
+    diskUsageLwmThreshold: "0.85" # default 0.90
+    diskUsageWarnThreshold: "0.9" # default 0.95
+    diskUsageThreshold: "0.95" # default 0.95 (use default)
+    diskCheckInterval: "1800" # default 10000
 
   ## Add a custom command to the start up process of the bookie pods (e.g. update-ca-certificates, jvm commands, etc)
   additionalCommand:
@@ -1042,12 +1048,14 @@ broker:
   ### Broker service account
   ## templates/broker-service-account.yaml
   service_account:
-    annotations: {}
+    annotations:
+      {}
       ## You may use the following annotation in order to use EKS IAM Roles for Service Accounts (IRSA)
     # eks.amazonaws.com/role-arn: arn:aws:iam::66666:role/my-iam-role-with-s3-access
   ## Tiered Storage
   ##
-  storageOffload: {}
+  storageOffload:
+    {}
     ## General
     ## =======
     # maxBlockSizeInBytes: "64000000"
@@ -1172,7 +1180,8 @@ proxy:
     # - action: labeldrop
     #   regex: cluster
   # True includes annotation for statefulset that contains hash of corresponding configmap, which will cause pods to restart on configmap change
-  restartPodsOnConfigMapChange: false
+  restartPodsOnConfigMapChange:
+    false
     # nodeSelector:
   # cloud.google.com/gke-nodepool: default-pool
   probe:
@@ -1326,7 +1335,8 @@ toolset:
   replicaCount: 1
   initContainers: []
   # True includes annotation for statefulset that contains hash of corresponding configmap, which will cause pods to restart on configmap change
-  restartPodsOnConfigMapChange: false
+  restartPodsOnConfigMapChange:
+    false
     # nodeSelector:
   # cloud.google.com/gke-nodepool: default-pool
   # set topologySpreadConstraint to deploy pods across different zones
@@ -1388,9 +1398,9 @@ kube-prometheus-stack:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-          - name: 'pulsar'
+          - name: "pulsar"
             orgId: 1
-            folder: 'Pulsar'
+            folder: "Pulsar"
             type: file
             disableDeletion: true
             editable: true
@@ -1485,13 +1495,17 @@ pulsar_manager:
     DRIVER_CLASS_NAME: "org.postgresql.Driver"
     # enables the "message peeking" feature
     PULSAR_PEEK_MESSAGE: "true"
+    JWT_TOKEN: "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiJ9.j0PolFhw2b5M2GRsuppFgb5cGl10ALj-nOCDubJtKneFozhiAZ749BsLDDZaSnepX9cCAtFpLCJU122QZEaP0tBPhE3vyC9eIojTZN9ugamNWl5yYXq_t1sgpZjnjbO2h1oiFNwT-Xesqf5Mj8rqICKctLo9rvJx2W-87yzqiWNgPzlv2lgNS_wq3gqqzbfFb0TEvgRUSnb9XnEKTkIkpIAskcu1k-dad5No9YgCBeKs2c6sbbC_J3pOgt2GIuhTPOA1-O2WgYbEUHcgZeYBluMILpJUi6aZ4O7bBDLl7Yp19rJ8BJ5nTQmmlQaLtsbn33EV3BMOIQ-ZlQ1-ZQsfBQ"
+    PRIVATE-KEY: "file:///pulsar-manager/keys/token/private.key"
+    PUBLIC-KEY: "file:///pulsar-manager/keys/token/public.key"
   volumes:
     # use a persistent volume or emptyDir
     persistence: true
     data:
       name: data
       size: 128Mi
-      local_storage: true
+      local_storage:
+        true
         ## If you already have an existent storage class and want to reuse it, you can specify its name with the option below
         ##
         # storageClassName: existent-storage-class,
@@ -1552,9 +1566,9 @@ pulsar_manager:
     ## UI_USERNAME: <UI username>
     existingSecret: ""
     ui_username: "pulsar"
-    ui_password: ""  # leave empty for random password
+    ui_password: "" # leave empty for random password
     db_username: "pulsar"
-    db_password: ""  # leave empty for random password
+    db_password: "" # leave empty for random password
 
 # These are jobs where job ttl configuration is used
 # pulsar-helm-chart/charts/pulsar/templates/pulsar-cluster-initialize.yaml
@@ -1573,4 +1587,5 @@ initContainer:
       memory: 256Mi
       cpu: 0.1
 serviceMonitor:
-    enabled: false
+  enabled: false
+

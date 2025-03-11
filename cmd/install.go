@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	installevent "github.com/huangxiaofeng10047/go-cli-example/cmd/event"
 	"helm.sh/helm/v4/pkg/cli"
 	"io"
 	"log"
@@ -118,7 +119,7 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 	client := action.NewInstall(cfg)
 	valueOpts := &values.Options{}
 	var outfmt output.Format
-
+	event := installevent.NewInstallEvent()
 	cmd := &cobra.Command{
 		Use:   "install [NAME] [CHART]",
 		Short: "install a chart",
@@ -128,6 +129,7 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			return compInstall(settings, args, toComplete, client)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
+			ctx := context.Background()
 			registryClient, err := newRegistryClient(settings, client.CertFile, client.KeyFile, client.CaFile,
 				client.InsecureSkipTLSverify, client.PlainHTTP, client.Username, client.Password)
 			if err != nil {
@@ -145,7 +147,11 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			if err != nil {
 				return errors.Wrap(err, "INSTALLATION FAILED")
 			}
-
+			err = event.FinishInstall(cfg, args[0])
+			if err != nil {
+			}
+			fmt.Fprintln(out, "Waiting for testcase finish...")
+			event.WaitTestCaseFinish(ctx, out)
 			return outfmt.Write(out, &statusPrinter{
 				release:      rel,
 				debug:        settings.Debug,
