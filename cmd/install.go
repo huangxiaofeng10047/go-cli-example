@@ -147,11 +147,12 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			if err != nil {
 				return errors.Wrap(err, "INSTALLATION FAILED")
 			}
-			err = event.FinishInstall(cfg, args[0])
+			err = event.FinishInstall(settings, cfg, args[0])
 			if err != nil {
 			}
 			fmt.Fprintln(out, "Waiting for testcase finish...")
-			event.WaitTestCaseFinish(ctx, out)
+			event.QueryRunningPod(settings, ctx, cfg, out)
+			event.WaitTestCaseFinish(settings, ctx, out)
 			return outfmt.Write(out, &statusPrinter{
 				release:      rel,
 				debug:        settings.Debug,
