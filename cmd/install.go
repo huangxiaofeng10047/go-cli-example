@@ -119,7 +119,12 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 	client := action.NewInstall(cfg)
 	valueOpts := &values.Options{}
 	var outfmt output.Format
-	event := installevent.NewInstallEvent()
+	// 添加测试配置
+	//event := GetGlobalEvent()
+	//if event == nil {
+	//	fmt.Fprintln(out, "event is not initialized...")
+	//	return nil
+	//}
 	cmd := &cobra.Command{
 		Use:   "install [NAME] [CHART]",
 		Short: "install a chart",
@@ -129,6 +134,7 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			return compInstall(settings, args, toComplete, client)
 		},
 		RunE: func(_ *cobra.Command, args []string) error {
+			event := installevent.NewInstallEvent(testConfig)
 			ctx := context.Background()
 			registryClient, err := newRegistryClient(settings, client.CertFile, client.KeyFile, client.CaFile,
 				client.InsecureSkipTLSverify, client.PlainHTTP, client.Username, client.Password)
@@ -147,18 +153,30 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			if err != nil {
 				return errors.Wrap(err, "INSTALLATION FAILED")
 			}
-			err = event.FinishInstall(settings, cfg, args[0])
-			if err != nil {
-			}
-			fmt.Fprintln(out, "Waiting for testcase finish...")
-			event.QueryRunningPod(settings, ctx, cfg, out)
-			event.WaitTestCaseFinish(settings, ctx, out)
-			return outfmt.Write(out, &statusPrinter{
+			err = outfmt.Write(out, &statusPrinter{
 				release:      rel,
 				debug:        settings.Debug,
 				showMetadata: false,
 				hideNotes:    client.HideNotes,
 			})
+			if err != nil {
+				return errors.Wrap(err, "INSTALLATION FAILED")
+			}
+			err = event.QueryRunningPod(settings, ctx, cfg, out)
+			if err != nil {
+				return err
+			}
+			err = event.FinishInstall(settings, cfg, args[0])
+			if err != nil {
+				return errors.Wrap(err, "INSTALLATION FAILED")
+			}
+			fmt.Fprintln(out, "Waiting for testcase finish...")
+
+			err = event.WaitTestCaseFinish(settings, ctx, out)
+			if err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 

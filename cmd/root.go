@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	installevent "github.com/huangxiaofeng10047/go-cli-example/cmd/event"
 	tlsutil "github.com/huangxiaofeng10047/go-cli-example/cmd/helm"
 	"helm.sh/helm/v4/pkg/cli"
 	"io"
@@ -32,8 +33,15 @@ func Execute() {
 	//}
 }
 
+var (
+	testConfig = &installevent.TestConfig{
+		Schema: "http",
+		Host:   "127.0.0.1",
+		Port:   8080,
+	}
+	globalEvent *installevent.InstallEvent
+)
 var globalUsage = `The Kubernetes package manager
-
 Common actions for Helm:
 
 - helm search:    search for charts
@@ -86,12 +94,14 @@ By default, the default directories depend on the Operating System. The defaults
 `
 
 func NewRootCmd(settings *cli.EnvSettings, actionConfig *action.Configuration, out io.Writer, args []string, debug action.DebugLog) (*cobra.Command, error) {
+	globalEvent = installevent.NewInstallEvent(testConfig)
 	cmd := &cobra.Command{
 		Use:          "helm",
 		Short:        "The Helm package manager for Kubernetes.",
 		Long:         globalUsage,
 		SilenceUsage: true,
 		PersistentPreRun: func(_ *cobra.Command, _ []string) {
+			globalEvent = installevent.NewInstallEvent(testConfig)
 			if err := startProfiling(); err != nil {
 				log.Printf("Warning: Failed to start profiling: %v", err)
 			}
@@ -103,7 +113,9 @@ func NewRootCmd(settings *cli.EnvSettings, actionConfig *action.Configuration, o
 		},
 	}
 	flags := cmd.PersistentFlags()
-
+	flags.StringVar(&testConfig.Schema, "test-case-schema", "http", "测试用例协议")
+	flags.StringVar(&testConfig.Host, "test-case-host", "127.0.0.1", "测试用例主机地址")
+	flags.IntVar(&testConfig.Port, "test-case-port", 8080, "测试用例端口")
 	settings.AddFlags(flags)
 	addKlogFlags(flags)
 
@@ -168,6 +180,9 @@ func NewRootCmd(settings *cli.EnvSettings, actionConfig *action.Configuration, o
 	actionConfig.RegistryClient = registryClient
 
 	// Add subcommands
+
+	// 初始化全局 event
+	//globalEvent = installevent.NewInstallEvent(testConfig)
 	cmd.AddCommand(
 		// chart commands
 		newDependencyCmd(settings, actionConfig, out),
@@ -175,6 +190,7 @@ func NewRootCmd(settings *cli.EnvSettings, actionConfig *action.Configuration, o
 		newListCmd(settings, actionConfig, out, debug),
 		newTemplateCmd(settings, actionConfig, out, debug),
 	)
+	// 使用 PersistentFlags 而不是 Flags
 
 	//cmd.AddCommand(
 	//	newRegistryCmd(actionConfig, out),
@@ -199,6 +215,11 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+// GetGlobalEvent 返回全局事件实例
+func GetGlobalEvent() *installevent.InstallEvent {
+	return globalEvent
 }
 func newRegistryClient(
 	settings *cli.EnvSettings, certFile, keyFile, caFile string, insecureSkipTLSverify, plainHTTP bool, username, password string,

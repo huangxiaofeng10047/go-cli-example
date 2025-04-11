@@ -53,7 +53,9 @@ pulsar-test ./charts/pulsar -n pulsar-test
 ./go-cli-example install \
 --values ./charts/values.yaml \
 --set namespace=pulsar \
-pulsar-mini ./charts/pulsar -n pulsar
+pulsar-mini ./charts/pulsar -n pulsar --test-case-schema=http \
+--test-case-host=10.7.19.26 \
+--test-case-port=38799 
 
 
     ./go-cli-example template test ./charts/pulsar/charts/kube-prometheus-stack \

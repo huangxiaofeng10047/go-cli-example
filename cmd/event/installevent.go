@@ -15,6 +15,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+type TestConfig struct {
+	Schema string
+	Host   string
+	Port   int
+}
+
+func NewInstallEvent(config *TestConfig) *InstallEvent {
+	var client TestClient = NewHTTPTestClient(config.Schema, config.Host, config.Port)
+	return &InstallEvent{client: client}
+}
+
 var count = 100000
 var bar = pb.StartNew(count)
 
@@ -26,15 +37,15 @@ type TestClient interface {
 }
 
 // installEvent 处理安装事件
-type installEvent struct {
+type InstallEvent struct {
 	client TestClient
 }
 
-// NewInstallEvent 创建新的安装事件处理器
-func NewInstallEvent() *installEvent {
-	var client TestClient = NewHTTPTestClient()
-	return &installEvent{client: client}
-}
+//// NewInstallEvent 创建新的安装事件处理器
+//func NewInstallEvent(schema string, host string, port int) *installEvent {
+//	var client TestClient = NewHTTPTestClient(schema, host, port)
+//	return &installEvent{client: client}
+//}
 
 // GetServiceExternalIp 获取服务的外部IP
 func GetServiceExternalIp(settings *cli.EnvSettings, ctx context.Context, clientset kubernetes.Interface, namespace, serviceName string) (string, error) {
@@ -43,11 +54,46 @@ func GetServiceExternalIp(settings *cli.EnvSettings, ctx context.Context, client
 		return "", fmt.Errorf("failed to get service %s: %v", serviceName, err)
 	}
 
-	if len(svc.Status.LoadBalancer.Ingress) > 0 {
-		return svc.Status.LoadBalancer.Ingress[0].IP, nil
+	// 检查 LoadBalancer 类型
+	if svc.Spec.Type == "LoadBalancer" {
+		if len(svc.Status.LoadBalancer.Ingress) > 0 {
+			// 优先检查 IP
+			if svc.Status.LoadBalancer.Ingress[0].IP != "" {
+				return svc.Status.LoadBalancer.Ingress[0].IP, nil
+			}
+			// 如果没有 IP，则检查 Hostname
+			if svc.Status.LoadBalancer.Ingress[0].Hostname != "" {
+				return svc.Status.LoadBalancer.Ingress[0].Hostname, nil
+			}
+		}
 	}
 
-	return "", fmt.Errorf("no external IP found for service %s", serviceName)
+	// 检查 NodePort 类型
+	if svc.Spec.Type == "NodePort" {
+		// 获取集群中的第一个节点
+		nodes, err := clientset.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+		if err != nil {
+			return "", fmt.Errorf("failed to list nodes: %v", err)
+		}
+
+		if len(nodes.Items) > 0 {
+			for _, addr := range nodes.Items[0].Status.Addresses {
+				if addr.Type == "ExternalIP" {
+					return addr.Address, nil
+				}
+				// 如果没有外部IP，使用内部IP
+				if addr.Type == "InternalIP" {
+					return addr.Address, nil
+				}
+			}
+		}
+	}
+	// 检查 ClusterIP 类型
+	if svc.Spec.ClusterIP != "" && svc.Spec.ClusterIP != "None" {
+		return svc.Spec.ClusterIP, nil
+	}
+
+	return "", fmt.Errorf("no IP address found for service %s (type: %s)", serviceName, svc.Spec.Type)
 }
 
 // GetPulsarProxyToken 获取Pulsar代理的Token
@@ -57,16 +103,16 @@ func GetPulsarProxyToken(settings *cli.EnvSettings, ctx context.Context, clients
 		return "", fmt.Errorf("failed to get secret %s: %v", secretName, err)
 	}
 
-	token, ok := secret.Data["token"]
+	token, ok := secret.Data["TOKEN"]
 	if !ok {
 		return "", fmt.Errorf("token not found in secret %s", secretName)
 	}
-
+	fmt.Println(string(token))
 	return string(token), nil
 }
 
 // FinishInstall 完成安装过程
-func (e *installEvent) FinishInstall(settings *cli.EnvSettings, cfg *action.Configuration, name string) error {
+func (e *InstallEvent) FinishInstall(settings *cli.EnvSettings, cfg *action.Configuration, name string) error {
 
 	// 创建进度条并开始
 	bar.Increment()
@@ -92,19 +138,19 @@ func (e *installEvent) FinishInstall(settings *cli.EnvSettings, cfg *action.Conf
 	err = e.client.Trigger(context.Background(), ip, token)
 	return err
 }
-func (e *installEvent) WaitTestCaseFinish(settings *cli.EnvSettings, ctx context.Context, out io.Writer) error {
+func (e *InstallEvent) WaitTestCaseFinish(settings *cli.EnvSettings, ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (e *installEvent) QueryRunningPod(settings *cli.EnvSettings, ctx context.Context, cfg *action.Configuration, out io.Writer) error {
+func (e *InstallEvent) QueryRunningPod(settings *cli.EnvSettings, ctx context.Context, cfg *action.Configuration, out io.Writer) error {
 	clientSet, err := cfg.KubernetesClientSet()
 	if err != nil {
 		return fmt.Errorf("获取k8s客户端失败: %v\n")
 	}
 
 	namespace := settings.Namespace()
-	timeout := time.After(5 * time.Minute)
-	tick := time.NewTicker(5 * time.Second)
+	timeout := time.After(15 * time.Minute)
+	tick := time.NewTicker(15 * time.Second)
 	defer tick.Stop()
 
 	for {
