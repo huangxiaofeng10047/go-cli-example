@@ -56,8 +56,19 @@ pulsar-test ./charts/pulsar -n pulsar-test
 pulsar-mini ./charts/pulsar -n pulsar --test-case-schema=http \
 --test-case-host=10.7.19.26 \
 --test-case-port=38799 
+## 16:13:39 ❯ helm list -n pulsar
+NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
+pulsar-mini     pulsar          1               2025-04-11 14:36:34.091842766 +0800 CST deployed        pulsar-3.9.0    4.0.2
 
 
     ./go-cli-example template test ./charts/pulsar/charts/kube-prometheus-stack \
 --show-only templates/exporters/kube-etcd/servicemonitor.yaml \
 --set cluster.name=pulsar-test   --set kubeEtcd.serviceMonitor.targetLabels.app=pulsar-etcd
+
+
+
+./go-cli-example upgrade pulsar-mini ./charts/pulsar --version 4.0.3 --values ./charts/values.yaml \
+--set namespace=pulsar \
+-n pulsar  --test-case-schema=http \
+--test-case-host=10.7.19.26 \
+--test-case-port=38799 

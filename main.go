@@ -22,16 +22,16 @@ import (
 
 var settings = cli.New()
 
-func warning(format string, v ...interface{}) {
-	format = fmt.Sprintf("WARNING: %s\n", format)
-	fmt.Fprintf(os.Stderr, format, v...)
-}
 func debug(format string, v ...interface{}) {
 	if settings.Debug {
 		timeNow := time.Now().String()
 		format = fmt.Sprintf("%s [debug] %s\n", timeNow, format)
 		log.Output(2, fmt.Sprintf(format, v...))
 	}
+}
+func warning(format string, v ...interface{}) {
+	format = fmt.Sprintf("WARNING: %s\n", format)
+	fmt.Fprintf(os.Stderr, format, v...)
 }
 
 // hookOutputWriter provides the writer for writing hook logs.
