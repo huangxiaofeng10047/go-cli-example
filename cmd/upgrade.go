@@ -266,7 +266,7 @@ func newUpgradeCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			if err != nil {
 				return err
 			}
-			err = event.FinishInstall2(settings, cfg, args[0])
+			err = event.FinishInstall(settings, cfg, args[0])
 			if err != nil {
 				return errors.Wrap(err, "INSTALLATION FAILED")
 			}

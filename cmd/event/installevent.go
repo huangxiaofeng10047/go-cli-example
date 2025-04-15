@@ -7,6 +7,7 @@ import (
 	"helm.sh/helm/v4/pkg/action"
 	"helm.sh/helm/v4/pkg/cli"
 	"strings"
+	"sync"
 	"time"
 
 	//"helm.sh/helm/v4/pkg/cli"
@@ -23,13 +24,39 @@ type TestConfig struct {
 
 func NewInstallEvent(config *TestConfig) *InstallEvent {
 	var client TestClient = NewHTTPTestClient(config.Schema, config.Host, config.Port)
+	showProgressBar()
 	return &InstallEvent{client: client}
 }
 
-//var count = 100000
-//var bar = pb.StartNew(count)
+var bar *pb.ProgressBar
 
-//var settings = cli.New()
+func showProgressBar() {
+	if bar != nil {
+		// 避免重复创建
+		return
+	}
+	tmpl := `{{ red "With funcs:" }} {{ bar . "<" "-" (cycle . "↖" "↗" "↘" "↙" ) "." ">"}} {{speed . | rndcolor }} {{percent .}} {{string . "my_green_string" | green}} {{string . "my_blue_string" | blue}}`
+	// 基于 pb 的模板开启一个进度条
+	bar = pb.ProgressBarTemplate(tmpl).Start64(2)
+	// 为 string 元素设置值
+	bar.Set("my_green_string", "green").
+		Set("my_blue_string", "blue")
+	//defer bar.Finish()
+}
+
+var barMutex sync.Mutex
+
+func updateProgress() {
+	barMutex.Lock()
+	defer barMutex.Unlock()
+	if bar != nil {
+		bar.Increment()
+		if bar.Current() >= bar.Total() {
+			bar.Finish()
+			bar = nil
+		}
+	}
+}
 
 // TestClient 定义了测试用例触发接口
 type TestClient interface {
@@ -114,97 +141,30 @@ func GetPulsarProxyToken(settings *cli.EnvSettings, ctx context.Context, clients
 // FinishInstall 完成安装过程
 func (e *InstallEvent) FinishInstall(settings *cli.EnvSettings, cfg *action.Configuration, name string) error {
 
-	// 假设总共有 3 个主要步骤，初始化进度条
-	totalSteps := 4
-	bar := pb.StartNew(totalSteps)
-	defer bar.Finish()
+	updateProgress()
 
 	clientSet, err := cfg.KubernetesClientSet()
 	if err != nil {
 		return err
 	}
-	bar.Increment() // 完成获取 clientSet 步骤，进度条前进一格
 
 	ctx := context.Background()
 	ip, err := GetServiceExternalIp(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-proxy", name))
 	if err != nil {
 		return err
 	}
-	bar.Increment() // 完成获取 IP 步骤，进度条前进一格
 
 	token, err := GetPulsarProxyToken(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-token-proxy-admin", name))
 	if err != nil {
 		return err
 	}
-	bar.Increment() // 完成获取 Token 步骤，进度条前进一格
 
 	// 触发测试用例
 	err = e.client.Trigger(context.Background(), ip, token)
-	bar.Increment() // 完成获取 Token 步骤，进度条前进一格
 	return err
 }
 func (e *InstallEvent) WaitTestCaseFinish(settings *cli.EnvSettings, ctx context.Context, out io.Writer) error {
 	return nil
-}
-
-// FinishInstall 完成安装过程
-func (e *InstallEvent) FinishInstall2(settings *cli.EnvSettings, cfg *action.Configuration, name string) error {
-	// 假设总共有 3 个主要步骤，初始化进度条
-	totalSteps := 3
-	width := 80 // 默认宽度
-	bar := pb.New(totalSteps)
-	bar.SetWidth(width)
-	bar.Start()
-	defer bar.Finish()
-
-	ctx := context.Background()
-	// 创建一个错误通道用于接收异步操作的错误
-	errChan := make(chan error, 3)
-
-	var clientSet kubernetes.Interface
-	// 步骤 1: 获取 clientSet
-	go func() {
-		var err error
-		clientSet, err = cfg.KubernetesClientSet()
-		errChan <- err
-	}()
-
-	// 等待步骤 1 完成
-	if err := <-errChan; err != nil {
-		return err
-	}
-	bar.Increment() // 完成获取 clientSet 步骤，进度条前进一格
-
-	var ip string
-	// 步骤 2: 获取 IP
-	go func() {
-		var err error
-		ip, err = GetServiceExternalIp(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-proxy", name))
-		errChan <- err
-	}()
-
-	// 等待步骤 2 完成
-	if err := <-errChan; err != nil {
-		return err
-	}
-	bar.Increment() // 完成获取 IP 步骤，进度条前进一格
-
-	var token string
-	// 步骤 3: 获取 Token
-	go func() {
-		var err error
-		token, err = GetPulsarProxyToken(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-token-proxy-admin", name))
-		errChan <- err
-	}()
-
-	// 等待步骤 3 完成
-	if err := <-errChan; err != nil {
-		return err
-	}
-	bar.Increment() // 完成获取 Token 步骤，进度条前进一格
-
-	// 触发测试用例
-	return e.client.Trigger(context.Background(), ip, token)
 }
 
 func (e *InstallEvent) QueryRunningPod(settings *cli.EnvSettings, ctx context.Context, cfg *action.Configuration, out io.Writer) error {
@@ -217,7 +177,7 @@ func (e *InstallEvent) QueryRunningPod(settings *cli.EnvSettings, ctx context.Co
 	timeout := time.After(15 * time.Minute)
 	tick := time.NewTicker(15 * time.Second)
 	defer tick.Stop()
-
+	updateProgress()
 	for {
 		select {
 		case <-ctx.Done():
