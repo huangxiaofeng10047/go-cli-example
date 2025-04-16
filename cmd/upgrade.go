@@ -266,13 +266,13 @@ func newUpgradeCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 			if err != nil {
 				return err
 			}
-			err = event.FinishInstall(settings, cfg, args[0])
-			if err != nil {
+			taskId, err2 := event.FinishInstall(settings, cfg, args[0])
+			if err2 != nil {
 				return errors.Wrap(err, "INSTALLATION FAILED")
 			}
 			fmt.Fprintln(out, "Waiting for testcase finish...")
 
-			err = event.WaitTestCaseFinish(settings, ctx, out)
+			err = event.WaitTestCaseFinish(settings, ctx, out, taskId)
 			if err != nil {
 				return err
 			}

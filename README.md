@@ -54,7 +54,7 @@ pulsar-test ./charts/pulsar -n pulsar-test
 --values ./charts/values.yaml \
 --set namespace=pulsar \
 pulsar-mini ./charts/pulsar -n pulsar --test-case-schema=http \
---test-case-host=10.7.19.26 \
+--test-case-host=10.7.20.26 \
 --test-case-port=38799 
 ## 16:13:39 ❯ helm list -n pulsar
 NAME            NAMESPACE       REVISION        UPDATED                                 STATUS          CHART           APP VERSION
