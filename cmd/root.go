@@ -187,6 +187,7 @@ func NewRootCmd(settings *cli.EnvSettings, actionConfig *action.Configuration, o
 		// chart commands
 		newDependencyCmd(settings, actionConfig, out),
 		newInstallCmd(settings, actionConfig, out, debug),
+		newScaleCmd(settings, actionConfig, out, debug),
 		newUpgradeCmd(settings, actionConfig, out, debug),
 		newListCmd(settings, actionConfig, out, debug),
 		newTemplateCmd(settings, actionConfig, out, debug),

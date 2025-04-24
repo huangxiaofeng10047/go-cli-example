@@ -127,7 +127,7 @@ func newInstallCmd(settings *cli.EnvSettings, cfg *action.Configuration, out io.
 	//}
 	cmd := &cobra.Command{
 		Use:   "install [NAME] [CHART]",
-		Short: "install a chart",
+		Short: "install a target version ",
 		Long:  installDesc,
 		Args:  require.MinimumNArgs(1),
 		ValidArgsFunction: func(_ *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
