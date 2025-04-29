@@ -185,7 +185,7 @@ func (e *InstallEvent) FinishInstall(settings *cli.EnvSettings, cfg *action.Conf
 		return "", err
 	}
 
-	token, err := GetPulsarProxyToken(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-token-proxy-admin", name))
+	token, err := GetPulsarProxyToken(settings, ctx, clientSet, settings.Namespace(), fmt.Sprintf("%s-token-admin", name))
 	if err != nil {
 		return "", err
 	}

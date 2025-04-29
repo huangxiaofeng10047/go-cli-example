@@ -1252,6 +1252,7 @@ proxy:
   ## templates/proxy-configmap.yaml
   ##
   configData:
+    PULSAR_PREFIX_authenticateMetricsEndpoint: "false"
     PULSAR_MEM: >
       -Xms64m -Xmx64m -XX:MaxDirectMemorySize=64m
     PULSAR_GC: >

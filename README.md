@@ -72,3 +72,7 @@ pulsar-mini     pulsar          1               2025-04-11 14:36:34.091842766 +0
 -n pulsar  --test-case-schema=http \
 --test-case-host=10.7.19.26 \
 --test-case-port=38799 
+
+
+helm upgrade --install pulsar-mini apache/pulsar -f values.yaml
+
